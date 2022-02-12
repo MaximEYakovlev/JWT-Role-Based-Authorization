@@ -1,10 +1,17 @@
 const User = require("./models/User");
 const Role = require("./models/Role");
 const bcrypt = require("bcryptjs");
+const { validationResult } = require("express-validator");
 
 class authController {
   async signup(req, res) {
     try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res
+          .status(400)
+          .json({ message: "Error during registration.", errors });
+      }
       const { username, password } = req.body;
       const candidate = await User.findOne({ username });
       if (candidate) {
@@ -12,7 +19,7 @@ class authController {
           .status(400)
           .json({ message: "A user with this name already exists." });
       }
-      const hashPassword = bcrypt.hashSync(password, 7);
+      const hashPassword = bcrypt.hashSync(password, process.env.SALT);
       const userRole = await Role.findOne({ value: "USER" });
       const user = new User({
         username,
